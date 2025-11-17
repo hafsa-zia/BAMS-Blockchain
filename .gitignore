@@ -1,0 +1,9 @@
+# Node modules
+node_modules/
+
+# Next.js build folder
+.next/
+
+# Other optional caches
+dist/
+.env

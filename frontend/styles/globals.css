@@ -1,0 +1,8 @@
+/* Tailwind base, components, and utilities */
+@import "tailwindcss";
+@reference "tailwindcss";
+
+/* Optional: add your own global styles here */
+body {
+  @apply bg-gray-50 text-gray-800 font-sans;
+}
