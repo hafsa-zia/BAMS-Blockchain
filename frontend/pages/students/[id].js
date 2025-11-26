@@ -1,111 +1,193 @@
+// frontend/pages/students/[id].js
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { getStudent, getStudentChain, markAttendance, updateStudent, deleteStudent } from "../../../utils/api";
-import { useAuth } from "../../../utils/auth";
+import {
+  getStudent,
+  getStudentChain,
+  markAttendance,
+  updateStudent,
+  deleteStudent,
+} from "../../utils/api";
 
 export default function StudentDetail() {
   const router = useRouter();
   const { id } = router.query;
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
-  const isStudentSelf = user?.role === "student" && user.id === id;
 
   const [student, setStudent] = useState(null);
   const [chain, setChain] = useState([]);
   const [status, setStatus] = useState("Present");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (id) fetchStudent(); }, [id]);
+  const [editName, setEditName] = useState("");
+  const [editRoll, setEditRoll] = useState("");
+
+  useEffect(() => {
+    if (id) fetchStudent();
+  }, [id]);
 
   const fetchStudent = async () => {
     try {
       const res = await getStudent(id);
       setStudent(res.data);
+      setEditName(res.data?.name || "");
+      setEditRoll(res.data?.rollNumber || "");
+
       const chainRes = await getStudentChain(id);
       setChain(chainRes.data.chain || []);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("Error loading student:", err);
+    }
   };
 
   const handleMark = async () => {
-    if (!isAdmin) return alert("Only admins can mark attendance.");
+    if (!id) return;
     setLoading(true);
     try {
       await markAttendance(id, { status });
       await fetchStudent();
-    } catch (err) { console.error(err); alert("Mark failed"); }
+    } catch (err) {
+      console.error("Error marking attendance:", err);
+      alert("Failed to mark attendance");
+    }
     setLoading(false);
   };
 
-  const handleEdit = async () => {
-    if (!isAdmin) return;
-    const newName = prompt("New name", student.name);
-    if (newName == null) return;
+  const handleUpdateStudent = async () => {
+    if (!editName.trim() || !editRoll.trim()) return;
     try {
-      await updateStudent(id, { updates: { name: newName }});
-      await fetchStudent();
-    } catch (err) { console.error(err); }
+      await updateStudent(id, {
+        updates: { name: editName, rollNumber: editRoll },
+      });
+      fetchStudent();
+    } catch (err) {
+      console.error("Error updating student:", err);
+      alert("Failed to update student");
+    }
   };
 
-  const handleDelete = async () => {
-    if (!isAdmin) return;
-    if (!confirm("Mark this student deleted?")) return;
+  const handleDeleteStudent = async () => {
+    if (!window.confirm("Mark this student as deleted?")) return;
     try {
       await deleteStudent(id);
       router.push("/students");
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("Error deleting student:", err);
+      alert("Failed to delete student");
+    }
   };
 
-  if (!student) return <div className="p-8">Loading...</div>;
-
   return (
-    <div className="p-8">
-      <h2 className="text-2xl font-bold mb-4">Student</h2>
-      <div className="border p-4 rounded mb-4">
-        <div className="text-xl font-semibold">{student.name}</div>
-        <div className="text-xs text-gray-600">Roll: {student.rollNumber}</div>
-        <div className="text-xs text-gray-600">Blocks: {chain.length}</div>
-      </div>
+    <div className="page-bg">
+      <div className="page-container">
+        <h2 className="page-title">Student Detail</h2>
+        <p className="page-subtitle">
+          Personal blockchain ledger showing all attendance entries linked by
+          hashes, timestamps and PoW.
+        </p>
 
-      {/* Admin-only mark UI */}
-      {isAdmin && (
-        <div className="mb-4">
-          <h3 className="text-lg">Mark Attendance</h3>
-          <select value={status} onChange={(e)=>setStatus(e.target.value)} className="border p-2 mr-2">
-            <option>Present</option>
-            <option>Absent</option>
-            <option>Leave</option>
-          </select>
-          <button onClick={handleMark} className="bg-blue-600 text-white px-3 py-1 rounded" disabled={loading}>
-            {loading ? "Marking..." : "Mark"}
-          </button>
-        </div>
-      )}
-
-      {/* Student self cannot mark others; show message */}
-      {user?.role === "student" && !isStudentSelf && (
-        <div className="mb-4 text-sm text-gray-500">You can only view your own profile/attendance.</div>
-      )}
-
-      {/* Edit/delete controls */}
-      {isAdmin && (
-        <div className="mb-4 flex gap-2">
-          <button onClick={handleEdit} className="px-3 py-1 bg-indigo-600 text-white rounded">Edit</button>
-          <button onClick={handleDelete} className="px-3 py-1 bg-red-600 text-white rounded">Delete</button>
-        </div>
-      )}
-
-      <div>
-        <h3 className="text-lg mb-2">Blockchain (chronological)</h3>
-        <div className="space-y-2">
-          {chain.map((b, idx) => (
-            <div key={idx} className="border p-3 rounded">
-              <div className="text-sm text-gray-600">Index: {b.index} — Timestamp: {new Date(b.timestamp).toLocaleString()}</div>
-              <div className="text-xs mt-1"><strong>Prev Hash:</strong> <div className="truncate">{b.prevHash}</div></div>
-              <div className="text-xs mt-1"><strong>Hash:</strong> <div className="truncate">{b.hash}</div></div>
-              <div className="text-xs mt-1"><strong>Nonce:</strong> {b.nonce}</div>
-              <div className="mt-2"><strong>Txn:</strong> <pre className="text-xs bg-gray-100 p-2 rounded">{JSON.stringify(b.transactions, null, 2)}</pre></div>
+        {/* Student Info + Edit */}
+        {student ? (
+          <div className="card p-4 mb-6">
+            <div className="muted mb-2">
+              Blocks in student chain: {student.chain?.length || 0}
             </div>
-          ))}
+            <div className="flex flex-col gap-2">
+              <input
+                className="input"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Name"
+              />
+              <input
+                className="input"
+                value={editRoll}
+                onChange={(e) => setEditRoll(e.target.value)}
+                placeholder="Roll number"
+              />
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={handleUpdateStudent}
+                  className="btn-primary px-3 py-1.5 text-xs"
+                >
+                  Update Student
+                </button>
+                <button
+                  onClick={handleDeleteStudent}
+                  className="btn-danger"
+                >
+                  Delete Student
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="muted">Loading student...</div>
+        )}
+
+        {/* Mark Attendance */}
+        <div className="card p-4 mb-6">
+          <h3 className="section-title">Mark Attendance</h3>
+          <div className="flex items-center gap-2">
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="select"
+            >
+              <option>Present</option>
+              <option>Absent</option>
+              <option>Leave</option>
+            </select>
+            <button
+              onClick={handleMark}
+              disabled={loading}
+              className="btn-primary px-4 py-2 text-sm disabled:opacity-60"
+            >
+              {loading ? "Marking..." : "Mark"}
+            </button>
+          </div>
+        </div>
+
+        {/* Blockchain / Attendance Chain */}
+        <div>
+          <h3 className="section-title">Blockchain (Attendance History)</h3>
+          <div className="space-y-3">
+            {chain.length === 0 ? (
+              <div className="muted">No chain data.</div>
+            ) : (
+              chain.map((b, idx) => (
+                <div key={idx} className="card p-3">
+                  <div className="text-sm text-slate-200">
+                    Index: <span className="font-mono">{b.index}</span> —{" "}
+                    {b.timestamp
+                      ? new Date(b.timestamp).toLocaleString()
+                      : "No timestamp"}
+                  </div>
+                  <div className="text-xs mt-1">
+                    <strong>Prev Hash:</strong>
+                    <div className="truncate font-mono text-[11px] text-slate-300">
+                      {b.prevHash}
+                    </div>
+                  </div>
+                  <div className="text-xs mt-1">
+                    <strong>Hash:</strong>
+                    <div className="truncate font-mono text-[11px] text-emerald-300">
+                      {b.hash}
+                    </div>
+                  </div>
+                  <div className="text-xs mt-1">
+                    <strong>Nonce:</strong>{" "}
+                    <span className="font-mono">{b.nonce}</span>
+                  </div>
+                  <div className="mt-2">
+                    <strong>Transaction:</strong>
+                    <pre className="text-[11px] bg-slate-900/80 border border-slate-700 rounded-xl p-2 mt-1 overflow-x-auto">
+                      {JSON.stringify(b.transactions, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

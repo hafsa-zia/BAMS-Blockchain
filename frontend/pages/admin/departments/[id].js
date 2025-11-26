@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+// frontend/pages/admin/departments/[id].js
 import { useRouter } from "next/router";
-import { getDepartments, getClasses, createClass } from "../../../utils/api";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getDepartments, getClasses, createClass } from "../../../utils/api";
 
-export default function DepartmentDetail() {
+export default function AdminDepartmentDetail() {
   const router = useRouter();
   const { id } = router.query;
 
@@ -12,90 +13,121 @@ export default function DepartmentDetail() {
   const [className, setClassName] = useState("");
 
   useEffect(() => {
-    if (id) fetchDept();
-    fetchClassList();
+    if (id) {
+      fetchDept();
+      fetchClassList();
+    }
   }, [id]);
 
   const fetchDept = async () => {
     try {
       const res = await getDepartments();
-      const found = res.data.find((d) => d._id === id);
+      const found = (res.data || []).find((d) => d._id === id);
       setDept(found || null);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("Error loading department:", err);
+    }
   };
 
   const fetchClassList = async () => {
     try {
       const res = await getClasses();
-      const list = res.data.filter((c) => c.departmentId === id);
+      const list = (res.data || []).filter((c) => c.departmentId === id);
       setClasses(list);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("Error loading classes:", err);
+    }
   };
 
   const handleAddClass = async () => {
-    if (!className) return;
+    if (!className.trim()) return;
     try {
       await createClass({ name: className, departmentId: id });
       setClassName("");
-      fetchClassList();
-      fetchDept();
-    } catch (err) { console.error(err); }
+      await fetchClassList();
+      await fetchDept();
+    } catch (err) {
+      console.error("Error creating class:", err);
+      alert("Failed to create class");
+    }
   };
 
-  return (
-    <div className="p-8">
-      <h2 className="text-2xl font-bold mb-4">Department</h2>
-      {dept ? (
-        <div className="border p-4 rounded mb-4">
-          <div className="text-xl font-semibold">{dept.name}</div>
-          <div className="text-sm text-gray-600">
-            Blocks: {dept.chain?.length || 0}
-          </div>
-        </div>
-      ) : (
-        <div>Loading...</div>
-      )}
-
-      <div className="mb-4">
-        <h3 className="text-lg">Classes</h3>
-        <div className="flex mt-2">
-          <input
-            value={className}
-            onChange={(e) => setClassName(e.target.value)}
-            placeholder="Class name"
-            className="border p-2 mr-2"
-          />
-          <button
-            onClick={handleAddClass}
-            className="bg-green-600 text-white px-3 py-1 rounded"
-          >
-            Create Class
-          </button>
-        </div>
+  if (!dept) {
+    return (
+      <div className="page-bg">
+        <div className="page-container">Loading department...</div>
       </div>
+    );
+  }
 
-      <div>
-        {classes.map((c) => (
-          <div
-            key={c._id}
-            className="border p-3 mb-2 rounded flex justify-between"
-          >
+  return (
+    <div className="page-bg">
+      <div className="page-container">
+        <h2 className="page-title">Department Detail</h2>
+        <p className="page-subtitle">
+          Manage classes under <span className="font-semibold">{dept.name}</span>.
+          Class genesis blocks use the latest hash of this department chain.
+        </p>
+
+        <div className="card p-4 mb-6">
+          <div className="flex items-center justify-between mb-2">
             <div>
-              <div className="font-semibold">{c.name}</div>
-              <div className="text-xs text-gray-600">
-                Blocks: {c.chain?.length || 0}
+              <div className="font-semibold text-lg">{dept.name}</div>
+              <div className="muted">
+                Department Chain Blocks: {dept.chain?.length || 0}
               </div>
             </div>
-            <div>
-              <Link href={`/classes/${c._id}`} className="text-blue-600">
-                Open
-              </Link>
-            </div>
           </div>
-        ))}
-        {classes.length === 0 && (
-          <div className="text-gray-500">No classes in this department yet.</div>
-        )}
+        </div>
+
+        {/* Add Class */}
+        <div className="card p-4 mb-6">
+          <h3 className="section-title">Add Class</h3>
+          <p className="muted mb-2">
+            Genesis block for this class will reference the latest department
+            block hash.
+          </p>
+          <div className="flex gap-2">
+            <input
+              value={className}
+              onChange={(e) => setClassName(e.target.value)}
+              placeholder="Class name (e.g. BSCS-1A)"
+              className="input flex-1"
+            />
+            <button onClick={handleAddClass} className="btn-primary">
+              Create Class
+            </button>
+          </div>
+        </div>
+
+        {/* Classes list */}
+        <div>
+          <h3 className="section-title">Classes in this Department</h3>
+          {classes.length === 0 ? (
+            <div className="muted">No classes in this department yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {classes.map((c) => (
+                <div key={c._id} className="list-card">
+                  <div>
+                    <div className="font-semibold text-slate-100">
+                      {c.name}
+                    </div>
+                    <div className="muted">
+                      Class Chain Blocks: {c.chain?.length || 0}
+                    </div>
+                  </div>
+                  <Link
+                    href={`/classes/${c._id}`}
+                    className="btn-secondary px-3 py-1.5 text-xs"
+                  >
+                    Open
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

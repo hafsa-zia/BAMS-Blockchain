@@ -1,6 +1,13 @@
+// frontend/pages/classes/[id].js
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { getClass, createStudent, getStudents } from "../../../utils/api";
+import {
+  getClassById,
+  createStudent,
+  getStudents,
+  updateClass,
+  deleteClass,
+} from "../../utils/api";
 import Link from "next/link";
 
 export default function ClassDetail() {
@@ -12,27 +19,36 @@ export default function ClassDetail() {
   const [studentName, setStudentName] = useState("");
   const [rollNumber, setRollNumber] = useState("");
 
+  const [newClassName, setNewClassName] = useState("");
+
   useEffect(() => {
-    if (id) fetchClass();
-    fetchStudents();
+    if (id) {
+      fetchClass();
+      fetchStudents();
+    }
   }, [id]);
 
   const fetchClass = async () => {
     try {
-      const res = await getClass(id);
+      const res = await getClassById(id);
       setCls(res.data);
-    } catch (err) { console.error(err); }
+      setNewClassName(res.data?.name || "");
+    } catch (err) {
+      console.error("Error loading class:", err);
+    }
   };
 
   const fetchStudents = async () => {
     try {
       const res = await getStudents();
-      setStudents(res.data.filter((s) => s.classId === id));
-    } catch (err) { console.error(err); }
+      setStudents((res.data || []).filter((s) => s.classId === id));
+    } catch (err) {
+      console.error("Error loading students:", err);
+    }
   };
 
   const handleAddStudent = async () => {
-    if (!studentName || !rollNumber) return;
+    if (!studentName.trim() || !rollNumber.trim() || !cls) return;
     try {
       await createStudent({
         name: studentName,
@@ -40,70 +56,133 @@ export default function ClassDetail() {
         classId: id,
         departmentId: cls.departmentId,
       });
-      setStudentName(""); setRollNumber("");
+      setStudentName("");
+      setRollNumber("");
       fetchStudents();
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("Error creating student:", err);
+      alert("Failed to create student");
+    }
+  };
+
+  const handleUpdateClass = async () => {
+    if (!newClassName.trim()) return;
+    try {
+      await updateClass(id, { updates: { name: newClassName } });
+      fetchClass();
+    } catch (err) {
+      console.error("Error updating class:", err);
+      alert("Failed to update class");
+    }
+  };
+
+  const handleDeleteClass = async () => {
+    if (!window.confirm("Mark this class as deleted?")) return;
+    try {
+      await deleteClass(id);
+      router.push("/classes");
+    } catch (err) {
+      console.error("Error deleting class:", err);
+      alert("Failed to delete class");
+    }
   };
 
   return (
-    <div className="p-8">
-      <h2 className="text-2xl font-bold mb-4">Class Details</h2>
-      {cls ? (
-        <div className="border p-4 rounded mb-4">
-          <div className="text-xl font-semibold">{cls.name}</div>
-          <div className="text-xs text-gray-600">
-            Blocks: {cls.chain?.length || 0}
-          </div>
-        </div>
-      ) : (
-        <div>Loading...</div>
-      )}
+    <div className="page-bg">
+      <div className="page-container">
+        <h2 className="page-title">Class Details</h2>
+        <p className="page-subtitle">
+          Students in this class form their own child blockchains linked to this
+          chain.
+        </p>
 
-      <div className="mb-4">
-        <h3 className="text-lg">Add Student</h3>
-        <div className="flex mt-2">
-          <input
-            placeholder="Student name"
-            value={studentName}
-            onChange={(e) => setStudentName(e.target.value)}
-            className="border p-2 mr-2"
-          />
-          <input
-            placeholder="Roll number"
-            value={rollNumber}
-            onChange={(e) => setRollNumber(e.target.value)}
-            className="border p-2 mr-2"
-          />
-          <button
-            onClick={handleAddStudent}
-            className="bg-green-600 text-white px-3 py-1 rounded"
-          >
-            Add
-          </button>
-        </div>
-      </div>
-
-      <div>
-        <h3 className="text-lg mb-2">Students</h3>
-        {students.map((s) => (
-          <div
-            key={s._id}
-            className="border p-3 mb-2 rounded flex justify-between"
-          >
-            <div>
-              <div className="font-semibold">{s.name}</div>
-              <div className="text-xs text-gray-600">Roll: {s.rollNumber}</div>
+        {cls ? (
+          <div className="card p-4 mb-6">
+            <div className="mb-2 muted">
+              Class Chain Blocks: {cls.chain?.length || 0}
             </div>
-            <div>
-              <Link href={`/students/${s._id}`} className="text-blue-600">
-                Open
-              </Link>
+            <div className="flex gap-2 items-center">
+              <input
+                className="input flex-1"
+                value={newClassName}
+                onChange={(e) => setNewClassName(e.target.value)}
+              />
+              <button
+                onClick={handleUpdateClass}
+                className="btn-primary px-3 py-1.5 text-xs"
+              >
+                Update
+              </button>
+              <button
+                onClick={handleDeleteClass}
+                className="btn-danger"
+              >
+                Delete
+              </button>
             </div>
           </div>
-        ))}
-        {students.length === 0 && (
-          <div className="text-gray-500">No students yet.</div>
+        ) : (
+          <div className="muted">Loading...</div>
         )}
+
+        {/* Add Student */}
+        <div className="card p-4 mb-6">
+          <h3 className="section-title">Add Student</h3>
+          <p className="muted mb-2">
+            Creating a student here will generate a new student chain using this
+            class&apos;s latest hash.
+          </p>
+          <div className="flex mt-2 gap-2">
+            <input
+              placeholder="Student name"
+              value={studentName}
+              onChange={(e) => setStudentName(e.target.value)}
+              className="input flex-1"
+            />
+            <input
+              placeholder="Roll number"
+              value={rollNumber}
+              onChange={(e) => setRollNumber(e.target.value)}
+              className="input flex-1"
+            />
+            <button
+              onClick={handleAddStudent}
+              className="btn-primary px-3 py-2 text-sm"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+
+        {/* Students list */}
+        <div>
+          <h3 className="section-title">Students</h3>
+          {students.length === 0 ? (
+            <div className="muted">No students yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {students.map((s) => (
+                <div
+                  key={s._id}
+                  className="list-card"
+                >
+                  <div>
+                    <div className="font-semibold text-slate-100">
+                      {s.name}
+                    </div>
+                    <div className="muted">Roll: {s.rollNumber}</div>
+                  </div>
+                  <Link
+                    href={`/students/${s._id}`}
+                    className="btn-secondary px-3 py-1.5 text-xs"
+                  >
+                    Open →
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
