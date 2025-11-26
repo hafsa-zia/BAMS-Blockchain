@@ -14,32 +14,28 @@ connectDB();
 
 const app = express();
 
-// ---------- CORS FIX ----------
+// ---------- CORS (Vercel-friendly) ----------
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://bams-blockchain-bb73.vercel.app", // your frontend URL
+  "https://bams-blockchain-bb73.vercel.app",
 ];
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS"
-  );
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With"
-  );
-  // Handle preflight
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-  next();
-});
-// Or you could simply do: app.use(cors({ origin: allowedOrigins }));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin like Postman or server-to-server
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    credentials: true,
+  })
+);
 
 // ---------- MIDDLEWARE ----------
 app.use(bodyParser.json());
@@ -51,5 +47,11 @@ app.use("/api/students", studentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 
 app.get("/", (req, res) => res.send("BAMS Backend Running"));
+
+// ---------- ERROR HANDLING ----------
+app.use((err, req, res, next) => {
+  console.error(err.message);
+  res.status(500).json({ message: err.message });
+});
 
 module.exports = app;
