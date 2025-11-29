@@ -8,6 +8,7 @@ const departmentRoutes = require("./routes/departments");
 const classRoutes = require("./routes/classes");
 const studentRoutes = require("./routes/students");
 const attendanceRoutes = require("./routes/attendance");
+const validationRoutes = require("./routes/validation"); // 👈 ADDED
 
 // Connect to MongoDB Atlas
 connectDB();
@@ -32,6 +33,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/validate", validationRoutes); // 👈 ADDED
 
 // Health/base route
 app.get("/", (req, res) => res.send("BAMS Backend Running"));
