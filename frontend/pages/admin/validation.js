@@ -1,3 +1,4 @@
+// frontend/pages/admin/validation.js
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getValidationReport } from "../../utils/api";
@@ -24,256 +25,263 @@ export default function ValidationPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Blockchain Validation Dashboard
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100">
+      {/* Top bar / title section */}
+      <div className="max-w-6xl mx-auto px-4 pt-8 pb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Blockchain Validation
           </h1>
-          <Link
-            href="/"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            ← Back to Home
-          </Link>
+          <p className="mt-1 text-sm text-gray-300 max-w-xl">
+            Verify department, class and student attendance chains across all
+            three levels of the hierarchy.
+          </p>
         </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-sm text-gray-100 border border-gray-700 hover:bg-gray-700 transition"
+        >
+          <span>← Back to Dashboard</span>
+        </Link>
+      </div>
+
+      <main className="max-w-6xl mx-auto px-4 pb-10">
+        {/* Loading / error */}
         {loading && (
-          <div className="text-gray-600">Validating chains...</div>
+          <div className="mt-6 bg-gray-800 border border-gray-700 rounded-xl p-4 text-sm text-gray-200">
+            Running multi-level validation...
+          </div>
         )}
 
         {error && (
-          <div className="mb-4 p-3 rounded bg-red-100 text-red-700 text-sm">
+          <div className="mt-4 bg-red-900/40 border border-red-500/60 rounded-xl p-4 text-sm text-red-100">
             {error}
           </div>
         )}
 
         {report && (
           <>
-            {/* Overall status */}
-            <div className="mb-6 p-4 rounded-lg shadow bg-white flex items-center justify-between">
-              <div>
-                <div className="text-sm uppercase tracking-wide text-gray-500">
-                  Overall Chain Status
+            {/* Overall summary card */}
+            <section className="mt-6">
+              <div className="bg-gray-900/60 border border-gray-700 rounded-2xl p-5 flex items-center justify-between shadow-lg shadow-black/40">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-gray-400">
+                    Overall Chain Status
+                  </p>
+                  <p
+                    className={`mt-2 text-2xl font-semibold ${
+                      report.overallValid ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {report.overallValid
+                      ? "All Chains Valid & Consistent"
+                      : "Integrity Issues Detected"}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-400">
+                    Validation checks:
+                    {" "}
+                    hashes, previous links, PoW and parent-child dependencies.
+                  </p>
                 </div>
                 <div
-                  className={`mt-1 text-xl font-bold ${
+                  className={`px-4 py-2 rounded-full text-xs font-semibold border ${
                     report.overallValid
-                      ? "text-emerald-600"
-                      : "text-red-600"
+                      ? "bg-green-900/40 text-green-300 border-green-500/40"
+                      : "bg-red-900/40 text-red-300 border-red-500/40"
                   }`}
                 >
-                  {report.overallValid ? "All Chains Valid" : "Some Chains Invalid"}
+                  {report.overallValid ? "✔ Secure" : "⚠ Requires Attention"}
                 </div>
               </div>
-              <div
-                className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                  report.overallValid
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {report.overallValid ? "✔ Secure" : "⚠ Attention Required"}
-              </div>
-            </div>
-
-            {/* Departments */}
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-3 text-gray-800">
-                Department Chains
-              </h2>
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left px-4 py-2">Name</th>
-                      <th className="text-left px-4 py-2">Status</th>
-                      <th className="text-left px-4 py-2">Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.departments.map((d) => (
-                      <tr
-                        key={d.id}
-                        className="border-t border-gray-100"
-                      >
-                        <td className="px-4 py-2">{d.name}</td>
-                        <td className="px-4 py-2">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              d.valid
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {d.valid ? "Valid" : "Invalid"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-xs text-gray-600">
-                          {d.errors.length === 0 ? (
-                            <span className="text-emerald-600">
-                              No issues detected
-                            </span>
-                          ) : (
-                            <ul className="list-disc pl-4 space-y-1">
-                              {d.errors.map((e, idx) => (
-                                <li key={idx}>{e}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {report.departments.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="px-4 py-3 text-gray-500"
-                        >
-                          No departments found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
             </section>
 
-            {/* Classes */}
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-3 text-gray-800">
-                Class Chains
-              </h2>
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left px-4 py-2">Name</th>
-                      <th className="text-left px-4 py-2">Department ID</th>
-                      <th className="text-left px-4 py-2">Status</th>
-                      <th className="text-left px-4 py-2">Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.classes.map((c) => (
-                      <tr
-                        key={c.id}
-                        className="border-t border-gray-100"
-                      >
-                        <td className="px-4 py-2">{c.name}</td>
-                        <td className="px-4 py-2 text-xs text-gray-500">
-                          {c.departmentId}
-                        </td>
-                        <td className="px-4 py-2">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              c.valid
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {c.valid ? "Valid" : "Invalid"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-xs text-gray-600">
-                          {c.errors.length === 0 ? (
-                            <span className="text-emerald-600">
-                              No issues detected
-                            </span>
-                          ) : (
-                            <ul className="list-disc pl-4 space-y-1">
-                              {c.errors.map((e, idx) => (
-                                <li key={idx}>{e}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {report.classes.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={4}
-                          className="px-4 py-3 text-gray-500"
-                        >
-                          No classes found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
+            {/* Three columns: Departments, Classes, Students */}
+            <section className="mt-8 grid gap-6 md:grid-cols-3">
+              {/* Departments card */}
+              <div className="bg-gray-900/70 border border-gray-800 rounded-2xl p-4 flex flex-col gap-3 shadow-md shadow-black/40">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold tracking-wide text-gray-100">
+                    Departments
+                  </h2>
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-gray-800 text-gray-300 border border-gray-700">
+                    {report.departments.length} chain(s)
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Independent root chains. If a department is tampered, all its
+                  child class and student chains are impacted.
+                </p>
 
-            {/* Students */}
-            <section>
-              <h2 className="text-lg font-semibold mb-3 text-gray-800">
-                Student Chains & Attendance Blocks
-              </h2>
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left px-4 py-2">Name</th>
-                      <th className="text-left px-4 py-2">Roll</th>
-                      <th className="text-left px-4 py-2">Class ID</th>
-                      <th className="text-left px-4 py-2">Status</th>
-                      <th className="text-left px-4 py-2">Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.students.map((s) => (
-                      <tr
-                        key={s.id}
-                        className="border-t border-gray-100"
-                      >
-                        <td className="px-4 py-2">{s.name}</td>
-                        <td className="px-4 py-2 text-xs text-gray-700">
-                          {s.rollNumber}
-                        </td>
-                        <td className="px-4 py-2 text-xs text-gray-500">
-                          {s.classId}
-                        </td>
-                        <td className="px-4 py-2">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              s.valid
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {s.valid ? "Valid" : "Invalid"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-xs text-gray-600">
-                          {s.errors.length === 0 ? (
-                            <span className="text-emerald-600">
-                              No issues detected
-                            </span>
-                          ) : (
-                            <ul className="list-disc pl-4 space-y-1">
-                              {s.errors.map((e, idx) => (
-                                <li key={idx}>{e}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {report.students.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="px-4 py-3 text-gray-500"
+                <div className="mt-2 space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {report.departments.length === 0 && (
+                    <p className="text-xs text-gray-500">
+                      No departments found.
+                    </p>
+                  )}
+
+                  {report.departments.map((d) => (
+                    <div
+                      key={d.id}
+                      className="rounded-lg border border-gray-800 bg-gray-900/70 px-3 py-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium text-gray-100">
+                          {d.name || "Unnamed Department"}
+                        </p>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                            d.valid
+                              ? "bg-green-900/40 text-green-300 border border-green-500/40"
+                              : "bg-red-900/40 text-red-300 border border-red-500/40"
+                          }`}
                         >
-                          No students found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                          {d.valid ? "Valid" : "Invalid"}
+                        </span>
+                      </div>
+                      {d.errors.length === 0 ? (
+                        <p className="mt-1 text-[10px] text-green-300/90">
+                          ✓ All department blocks consistent
+                        </p>
+                      ) : (
+                        <ul className="mt-1 text-[10px] text-red-200 list-disc pl-4 space-y-0.5">
+                          {d.errors.map((e, idx) => (
+                            <li key={idx}>{e}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Classes card */}
+              <div className="bg-gray-900/70 border border-gray-800 rounded-2xl p-4 flex flex-col gap-3 shadow-md shadow-black/40">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold tracking-wide text-gray-100">
+                    Classes
+                  </h2>
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-gray-800 text-gray-300 border border-gray-700">
+                    {report.classes.length} chain(s)
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Class genesis blocks must reference the latest hash of their
+                  parent department chain.
+                </p>
+
+                <div className="mt-2 space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {report.classes.length === 0 && (
+                    <p className="text-xs text-gray-500">
+                      No classes found.
+                    </p>
+                  )}
+
+                  {report.classes.map((c) => (
+                    <div
+                      key={c.id}
+                      className="rounded-lg border border-gray-800 bg-gray-900/70 px-3 py-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-gray-100">
+                            {c.name || "Unnamed Class"}
+                          </p>
+                          <p className="text-[10px] text-gray-400">
+                            Dept ID: {c.departmentId}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                            c.valid
+                              ? "bg-green-900/40 text-green-300 border border-green-500/40"
+                              : "bg-red-900/40 text-red-300 border border-red-500/40"
+                          }`}
+                        >
+                          {c.valid ? "Valid" : "Invalid"}
+                        </span>
+                      </div>
+                      {c.errors.length === 0 ? (
+                        <p className="mt-1 text-[10px] text-green-300/90">
+                          ✓ Genesis prevHash correctly linked to department
+                          chain
+                        </p>
+                      ) : (
+                        <ul className="mt-1 text-[10px] text-red-200 list-disc pl-4 space-y-0.5">
+                          {c.errors.map((e, idx) => (
+                            <li key={idx}>{e}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Students card */}
+              <div className="bg-gray-900/70 border border-gray-800 rounded-2xl p-4 flex flex-col gap-3 shadow-md shadow-black/40">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold tracking-wide text-gray-100">
+                    Students & Attendance
+                  </h2>
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-gray-800 text-gray-300 border border-gray-700">
+                    {report.students.length} chain(s)
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Student chains contain personal history of attendance; any
+                  tampered attendance block breaks the entire chain.
+                </p>
+
+                <div className="mt-2 space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {report.students.length === 0 && (
+                    <p className="text-xs text-gray-500">
+                      No students found.
+                    </p>
+                  )}
+
+                  {report.students.map((s) => (
+                    <div
+                      key={s.id}
+                      className="rounded-lg border border-gray-800 bg-gray-900/70 px-3 py-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-gray-100">
+                            {s.name || "Unnamed Student"}
+                          </p>
+                          <p className="text-[10px] text-gray-400">
+                            Roll: {s.rollNumber || "N/A"}
+                          </p>
+                          <p className="text-[10px] text-gray-500">
+                            Class ID: {s.classId}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                            s.valid
+                              ? "bg-green-900/40 text-green-300 border border-green-500/40"
+                              : "bg-red-900/40 text-red-300 border border-red-500/40"
+                          }`}
+                        >
+                          {s.valid ? "Valid" : "Invalid"}
+                        </span>
+                      </div>
+                      {s.errors.length === 0 ? (
+                        <p className="mt-1 text-[10px] text-green-300/90">
+                          ✓ All attendance blocks consistent and linked with PoW
+                          satisfied
+                        </p>
+                      ) : (
+                        <ul className="mt-1 text-[10px] text-red-200 list-disc pl-4 space-y-0.5">
+                          {s.errors.map((e, idx) => (
+                            <li key={idx}>{e}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
           </>
