@@ -48,7 +48,13 @@ export default function Home() {
           </Link>
         </div>
 
-        
+        <Link
+  href="/admin/validation"
+  className="inline-block mt-4 px-4 py-2 rounded bg-purple-600 text-white text-sm hover:bg-purple-700"
+>
+  View Blockchain Validation
+</Link>
+
       </div>
     </main>
   );
